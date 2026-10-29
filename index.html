@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EcoPulse - Smart Waste Management System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <!-- ================= AUTHENTICATION OVERLAY ================= -->
+  <div class="auth-wrapper" id="authWrapper">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="brand-icon auth-logo">
+          <i data-lucide="recycle"></i>
+        </div>
+        <h2>EcoPulse Portal</h2>
+        <p class="text-muted" id="authSubtitle">Select your login portal to proceed</p>
+      </div>
+
+      <!-- Portal Switcher Tabs -->
+      <div class="role-selector">
+        <button type="button" class="role-tab active" id="roleBtnUser" onclick="switchLoginPortal('USER')">
+          <i data-lucide="smartphone"></i>
+          <span>Citizen (Mobile OTP)</span>
+        </button>
+        <button type="button" class="role-tab" id="roleBtnAdmin" onclick="switchLoginPortal('ADMIN')">
+          <i data-lucide="shield-check"></i>
+          <span>Admin (Email/Pass)</span>
+        </button>
+      </div>
+
+      <!-- ================= PORTAL 1: CITIZEN MOBILE LOGIN ================= -->
+      <div id="citizenAuthFlow">
+        <!-- Step 1: Mobile Phone Input -->
+        <form id="mobileForm" onsubmit="handleSendRealOtp(event)">
+          <div class="form-group">
+            <label for="mobileInput">Mobile Phone Number</label>
+            <div class="input-with-prefix">
+              <span class="phone-prefix">+91</span>
+              <input 
+                type="tel" 
+                id="mobileInput" 
+                placeholder="Enter 10-digit mobile number" 
+                maxlength="10" 
+                pattern="[0-9]{10}"
+                required 
+                autocomplete="tel"
+              />
+            </div>
+            <span class="form-hint">Enter your 10-digit number to receive your OTP instantly.</span>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="btnSendOtp">
+            <span id="btnSendOtpText">Get Login OTP</span>
+            <i data-lucide="arrow-right"></i>
+          </button>
+
+          <!-- Instant 1-Click Demo Citizen Login -->
+          <div class="instant-bypass-card">
+            <div class="instant-bypass-header">
+              <i data-lucide="zap"></i>
+              <span>Need Quick Access without Waiting?</span>
+            </div>
+            <p class="instant-bypass-desc">
+              If telecom SMS delivery is delayed on your cellular provider, click below to log in directly:
+            </p>
+            <button type="button" class="btn btn-outline btn-block" onclick="instantCitizenLogin()">
+              <i data-lucide="log-in"></i> Direct Citizen Instant Login (1-Click)
+            </button>
+          </div>
+        </form>
+
+        <!-- Step 2: OTP Verification Form -->
+        <form id="otpForm" class="hidden" onsubmit="handleVerifyRealOtp(event)">
+          <div class="otp-notice">
+            <i data-lucide="smartphone"></i>
+            <div>
+              <div>OTP sent for <strong id="sentPhoneDisplay">+91 00000 00000</strong></div>
+              <div class="text-muted" style="font-size: 0.8rem;">Check your device popup or use Universal Passcode: <strong>123456</strong></div>
+            </div>
+          </div>
+
+          <!-- Fast OTP Helper Pill -->
+          <div class="universal-otp-pill">
+            <span>Universal Backup Passcode: <code>123456</code></span>
+            <button type="button" class="btn-copy-code" onclick="fillUniversalOtp()">Use 123456</button>
+          </div>
+
+          <div class="form-group">
+            <label>Enter 6-Digit OTP</label>
+            <div class="otp-input-boxes">
+              <input type="text" maxlength="1" class="otp-digit" pattern="[0-9]" inputmode="numeric" />
+              <input type="text" maxlength="1" class="otp-digit" pattern="[0-9]" inputmode="numeric" />
+              <input type="text" maxlength="1" class="otp-digit" pattern="[0-9]" inputmode="numeric" />
+              <input type="text" maxlength="1" class="otp-digit" pattern="[0-9]" inputmode="numeric" />
+              <input type="text" maxlength="1" class="otp-digit" pattern="[0-9]" inputmode="numeric" />
+              <input type="text" maxlength="1" class="otp-digit" pattern="[0-9]" inputmode="numeric" />
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="btnVerifyOtp">
+            <i data-lucide="check-circle-2"></i>
+            <span id="btnVerifyOtpText">Verify & Enter Portal</span>
+          </button>
+
+          <div class="otp-footer-links">
+            <button type="button" class="btn-link" onclick="backToMobileStep()">&larr; Change Phone</button>
+            <button type="button" class="btn-link" onclick="resendRealOtp()">Resend Code</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ================= PORTAL 2: ADMIN EMAIL LOGIN ================= -->
+      <div id="adminAuthFlow" class="hidden">
+        <form id="adminLoginForm" onsubmit="handleAdminEmailLogin(event)">
+          <div class="admin-badge-banner">
+            <i data-lucide="lock"></i>
+            <span>Restricted Municipal Administration Portal</span>
+          </div>
+
+          <div class="form-group">
+            <label for="adminEmailInput">Admin Official Email *</label>
+            <div class="input-with-prefix">
+              <span class="phone-prefix"><i data-lucide="mail" style="width: 16px; height: 16px;"></i></span>
+              <input 
+                type="email" 
+                id="adminEmailInput" 
+                placeholder="admin@smartwaste.gov" 
+                required 
+                autocomplete="username"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="adminPasswordInput">Security Password *</label>
+            <div class="input-with-prefix">
+              <span class="phone-prefix"><i data-lucide="key" style="width: 16px; height: 16px;"></i></span>
+              <input 
+                type="password" 
+                id="adminPasswordInput" 
+                placeholder="Enter admin password" 
+                required 
+                autocomplete="current-password"
+              />
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-secondary btn-block">
+            <i data-lucide="shield-check"></i>
+            <span>Sign In to Admin Console</span>
+          </button>
+
+          <div class="demo-numbers-box" style="margin-top: 1.25rem;">
+            <div class="font-bold" style="margin-bottom: 0.35rem; color: var(--secondary);">Default Admin Credentials:</div>
+            <div>Email: <code>admin@smartwaste.gov</code></div>
+            <div>Password: <code>Admin@2026</code></div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MAIN APPLICATION CONTAINER ================= -->
+  <div class="app-container hidden" id="mainAppContainer">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <i data-lucide="recycle"></i>
+        </div>
+        <div>
+          <h2>EcoPulse</h2>
+          <span class="badge-smart" id="sessionRoleBadge">CITIZEN PORTAL</span>
+        </div>
+      </div>
+
+      <nav class="nav-links">
+        <button class="nav-btn active" data-tab="dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-btn" data-tab="requests">
+          <i data-lucide="truck"></i>
+          <span>Collection Requests</span>
+          <span class="counter-badge" id="badge-requests-count">0</span>
+        </button>
+        <button class="nav-btn" data-tab="bins">
+          <i data-lucide="trash-2"></i>
+          <span>Smart Bins</span>
+          <span class="counter-badge alert" id="badge-urgent-bins">0</span>
+        </button>
+        <button class="nav-btn" data-tab="complaints">
+          <i data-lucide="message-square-warning"></i>
+          <span>Public Complaints</span>
+          <span class="counter-badge" id="badge-complaints-count">0</span>
+        </button>
+      </nav>
+
+      <!-- User Profile & Logout section in Sidebar -->
+      <div class="sidebar-footer">
+        <div class="user-session-card">
+          <div class="user-avatar" id="avatarRoleIcon">
+            <i data-lucide="user"></i>
+          </div>
+          <div class="user-info">
+            <span class="user-phone" id="activeUserIdentifier">+91 0000000000</span>
+            <span class="user-role-tag" id="activeRoleTag">Citizen User</span>
+          </div>
+          <button class="btn-icon btn-logout" onclick="handleLogout()" title="Logout">
+            <i data-lucide="log-out"></i>
+          </button>
+        </div>
+        <div class="status-indicator">
+          <span class="pulse-dot"></span>
+          <span>System Online & Encrypted</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top Bar -->
+      <header class="topbar">
+        <div>
+          <h1 id="page-title">Operational Dashboard</h1>
+          <p id="page-subtitle">Real-time waste monitoring, request tracking, and smart bin telemetry.</p>
+        </div>
+        <div class="quick-actions" id="topQuickActions">
+          <button class="btn btn-primary" onclick="openModal('requestModal')">
+            <i data-lucide="plus-circle"></i>
+            <span>New Request</span>
+          </button>
+          <!-- Register Bin Button (Accessible Everywhere for Easy Addition) -->
+          <button class="btn btn-secondary" onclick="openModal('binModal')">
+            <i data-lucide="plus-circle"></i>
+            <span>Register Waste Bin</span>
+          </button>
+          <button class="btn btn-warning" onclick="openModal('complaintModal')">
+            <i data-lucide="alert-triangle"></i>
+            <span>Report Issue</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- TAB 1: DASHBOARD -->
+      <section id="dashboard-tab" class="tab-pane active">
+        <!-- Metric Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-title" id="lbl-total-req">Total Requests</span>
+              <div class="icon-bubble blue"><i data-lucide="clipboard-list"></i></div>
+            </div>
+            <div class="stat-value" id="stat-total-requests">0</div>
+            <div class="stat-footer text-muted" id="stat-requests-scope">All active & finished requests</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-title">Collected / Resolved</span>
+              <div class="icon-bubble green"><i data-lucide="check-circle-2"></i></div>
+            </div>
+            <div class="stat-value text-success" id="stat-collected-requests">0</div>
+            <div class="stat-footer text-muted" id="stat-completion-rate">0% resolution rate</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-title">Pending / In Progress</span>
+              <div class="icon-bubble amber"><i data-lucide="clock"></i></div>
+            </div>
+            <div class="stat-value text-warning" id="stat-pending-requests">0</div>
+            <div class="stat-footer text-muted">Awaiting crew dispatch</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-title">Urgent Bins (≥80%)</span>
+              <div class="icon-bubble red"><i data-lucide="alert-octagon"></i></div>
+            </div>
+            <div class="stat-value text-danger" id="stat-urgent-bins">0</div>
+            <div class="stat-footer text-muted" id="stat-total-bins-info">Out of 0 monitored bins</div>
+          </div>
+        </div>
+
+        <!-- Dashboard Two-Column Overview -->
+        <div class="grid-2col">
+          <!-- Critical Bins Alert Widget -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i data-lucide="flame" class="text-danger"></i>
+                Critical Bins Requiring Dispatch
+              </div>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="openModal('binModal')">
+                  <i data-lucide="plus"></i> Add Bin
+                </button>
+                <button class="btn-link" onclick="switchTab('bins')">View all &rarr;</button>
+              </div>
+            </div>
+            <div class="card-body" id="urgent-bins-container">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Recent Requests Feed -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i data-lucide="history" class="text-primary"></i>
+                <span id="recentRequestsTitle">Recent Waste Requests</span>
+              </div>
+              <button class="btn-link" onclick="switchTab('requests')">View all &rarr;</button>
+            </div>
+            <div class="card-body" id="recent-requests-container">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: REQUESTS -->
+      <section id="requests-tab" class="tab-pane">
+        <div class="toolbar">
+          <div class="search-box">
+            <i data-lucide="search"></i>
+            <input type="text" id="requestSearchInput" placeholder="Search by ID, location, or waste type..." oninput="renderRequests()" />
+          </div>
+          <div class="filter-group">
+            <label for="statusFilter">Filter Status:</label>
+            <select id="statusFilter" onchange="renderRequests()">
+              <option value="ALL">All Statuses</option>
+              <option value="Pending">Pending</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Collected">Collected</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="openModal('requestModal')">
+            <i data-lucide="plus"></i> Add Request
+          </button>
+        </div>
+
+        <div class="table-container card">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Request ID</th>
+                <th>Location</th>
+                <th>Waste Type</th>
+                <th>Requested By</th>
+                <th>Current Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="requestsTableBody">
+              <!-- Populated via JS -->
+            </tbody>
+          </table>
+          <div id="requestsEmptyState" class="empty-state hidden">
+            <i data-lucide="inbox"></i>
+            <h3>No collection requests found</h3>
+            <p>Click "New Request" to create a waste pickup order.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: BINS -->
+      <section id="bins-tab" class="tab-pane">
+        <div class="toolbar">
+          <div class="search-box">
+            <i data-lucide="search"></i>
+            <input type="text" id="binSearchInput" placeholder="Search bin location or ID..." oninput="renderBins()" />
+          </div>
+          <!-- Prominent Register Waste Bin Button -->
+          <button class="btn btn-secondary" onclick="openModal('binModal')">
+            <i data-lucide="plus-circle"></i> Register Waste Bin
+          </button>
+        </div>
+
+        <div class="bins-grid" id="binsGrid">
+          <!-- Populated via JS -->
+        </div>
+
+        <div id="binsEmptyState" class="empty-state hidden">
+          <i data-lucide="trash"></i>
+          <h3>No Smart Bins Registered</h3>
+          <p>Register bins to track sensor telemetry & capacity levels in real-time.</p>
+          <button class="btn btn-secondary" style="margin-top: 1rem;" onclick="openModal('binModal')">
+            <i data-lucide="plus"></i> Register First Bin Now
+          </button>
+        </div>
+      </section>
+
+      <!-- TAB 4: COMPLAINTS -->
+      <section id="complaints-tab" class="tab-pane">
+        <div class="toolbar">
+          <div class="search-box">
+            <i data-lucide="search"></i>
+            <input type="text" id="complaintSearchInput" placeholder="Search complaints..." oninput="renderComplaints()" />
+          </div>
+          <button class="btn btn-warning" onclick="openModal('complaintModal')">
+            <i data-lucide="alert-triangle"></i> Register Complaint
+          </button>
+        </div>
+
+        <div class="complaints-list" id="complaintsList">
+          <!-- Populated via JS -->
+        </div>
+
+        <div id="complaintsEmptyState" class="empty-state hidden">
+          <i data-lucide="shield-check"></i>
+          <h3>No Citizen Complaints</h3>
+          <p>All clean! There are currently no complaints on record.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL: ADD REQUEST -->
+  <div class="modal-overlay" id="requestModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3><i data-lucide="truck"></i> New Collection Request</h3>
+        <button class="btn-close" onclick="closeModal('requestModal')">&times;</button>
+      </div>
+      <form id="requestForm" onsubmit="handleCreateRequest(event)">
+        <div class="form-group">
+          <label for="reqLocation">Pickup Location *</label>
+          <input type="text" id="reqLocation" required placeholder="e.g. 42 Elm Street, Sector 5" />
+        </div>
+        <div class="form-group">
+          <label for="reqType">Waste Classification *</label>
+          <select id="reqType" required>
+            <option value="Dry">Dry Waste (Paper, Cardboard, Packaging)</option>
+            <option value="Wet">Wet Waste (Kitchen / Biodegradable)</option>
+            <option value="Plastic">Plastic Waste (Bottles, Polythene, Polymers)</option>
+            <option value="E-Waste">E-Waste (Electronics, Batteries, Circuits)</option>
+            <option value="Hazardous">Hazardous / Biomedical</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeModal('requestModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Submit Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTER WASTE BIN (Menu 5 - Available for All Users) -->
+  <div class="modal-overlay" id="binModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3><i data-lucide="trash-2"></i> Register Waste Bin</h3>
+        <button class="btn-close" onclick="closeModal('binModal')">&times;</button>
+      </div>
+      <form id="binForm" onsubmit="handleCreateBin(event)">
+        <div class="form-group">
+          <label for="binLocation">Bin Placement Location *</label>
+          <input type="text" id="binLocation" required placeholder="e.g. Market Square, North Exit #3" />
+        </div>
+        <div class="form-group">
+          <label for="binFill">Initial Fill Level (0 - 100%): <span id="fillLevelDisplay" class="font-bold text-success">45%</span></label>
+          <input type="range" id="binFill" min="0" max="100" value="45" oninput="updateFillSlider(this.value)" />
+          <div class="range-labels">
+            <span>0% (Empty)</span>
+            <span>50%</span>
+            <span>80% (Needs Collection)</span>
+            <span>100% (Full)</span>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeModal('binModal')">Cancel</button>
+          <button type="submit" class="btn btn-secondary">
+            <i data-lucide="plus-circle"></i> Register Waste Bin
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD COMPLAINT -->
+  <div class="modal-overlay" id="complaintModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3><i data-lucide="alert-triangle"></i> Register Citizen Complaint</h3>
+        <button class="btn-close" onclick="closeModal('complaintModal')">&times;</button>
+      </div>
+      <form id="complaintForm" onsubmit="handleCreateComplaint(event)">
+        <div class="form-group">
+          <label for="complaintLocation">Issue Location *</label>
+          <input type="text" id="complaintLocation" required placeholder="e.g. Near Community Park North Gate" />
+        </div>
+        <div class="form-group">
+          <label for="complaintProblem">Problem Description *</label>
+          <textarea id="complaintProblem" rows="3" required placeholder="Describe what went wrong (e.g. Overflowing garbage, missed schedule, foul odor)..."></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeModal('complaintModal')">Cancel</button>
+          <button type="submit" class="btn btn-warning">Submit Complaint</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
